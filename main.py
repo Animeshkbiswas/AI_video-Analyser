@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 from pathlib import Path
 from utils.audio_processor import process_input
 from core.transcriber import transcribe_all_with_segments

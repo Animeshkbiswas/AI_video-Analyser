@@ -47,7 +47,12 @@ def transcribe_chunk_whisper(chunk_path: str, start_offset_seconds: float = 0.0)
 
     model = load_model()  
 
-    result = model.transcribe(chunk_path, task="transcribe")  
+    result = model.transcribe(
+        chunk_path,
+        task="transcribe",
+        fp16=False,
+        verbose=False,
+    )  
     segments = []
     for index, segment in enumerate(result.get("segments", [])):
         segment_text = segment.get("text", "").strip()
