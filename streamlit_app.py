@@ -261,6 +261,22 @@ def summarize_counts(text: str) -> str:
     return f"{word_count:,} words"
 
 
+def split_sources_block(content: str) -> tuple[str, str]:
+    if not content or "\n\nSources:\n" not in content:
+        return content, ""
+    body, sources = content.split("\n\nSources:\n", 1)
+    return body, sources
+
+
+def render_cited_section(title: str, content: str) -> None:
+    body, sources = split_sources_block(content)
+    st.markdown(f"#### {title}")
+    st.markdown(body)
+    if sources:
+        st.markdown("##### Sources")
+        st.markdown(sources)
+
+
 st.markdown(APP_CSS, unsafe_allow_html=True)
 
 st.markdown(
@@ -353,42 +369,65 @@ if result:
 
     with tabs[0]:
         st.markdown('<div class="glass-card fade-in">', unsafe_allow_html=True)
-        st.markdown("#### Summary")
-        st.markdown(result.get("summary", ""))
+        render_cited_section("Summary", result.get("summary", ""))
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[1]:
         st.markdown('<div class="glass-card fade-in">', unsafe_allow_html=True)
         st.markdown("#### Transcript")
+        timestamped_transcript = result.get("timestamped_transcript", "")
+        if timestamped_transcript:
+            st.caption("Timestamped segments are preserved for citation-aware retrieval and extraction.")
+            st.text_area(
+                "Timestamped transcript",
+                timestamped_transcript,
+                height=220,
+                label_visibility="collapsed",
+            )
+            st.markdown("---")
+            with st.expander("Show timestamped segment table", expanded=False):
+                st.dataframe(
+                    [
+                        {
+                            "start": segment.get("start"),
+                            "end": segment.get("end"),
+                            "text": segment.get("text", ""),
+                        }
+                        for segment in result.get("segments", [])
+                    ],
+                    use_container_width=True,
+                    hide_index=True,
+                )
         st.text_area("Full transcript", transcript, height=420, label_visibility="collapsed")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[2]:
         st.markdown('<div class="glass-card fade-in">', unsafe_allow_html=True)
-        st.markdown("#### Action Items")
-        st.markdown(result.get("action_items", ""))
+        render_cited_section("Action Items", result.get("action_items", ""))
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[3]:
         st.markdown('<div class="glass-card fade-in">', unsafe_allow_html=True)
-        st.markdown("#### Key Decisions")
-        st.markdown(result.get("key_decisions", ""))
+        render_cited_section("Key Decisions", result.get("key_decisions", ""))
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[4]:
         st.markdown('<div class="glass-card fade-in">', unsafe_allow_html=True)
-        st.markdown("#### Open Questions")
-        st.markdown(result.get("open_questions", ""))
+        render_cited_section("Open Questions", result.get("open_questions", ""))
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[5]:
         st.markdown('<div class="glass-card fade-in">', unsafe_allow_html=True)
         st.markdown("#### Ask the meeting")
-        st.caption("Questions are answered only from the transcript context.")
+        st.caption("Questions are answered only from the transcript context and include cited timestamp sources.")
 
         for message in st.session_state.chat_history:
             with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+                body, sources = split_sources_block(message["content"])
+                st.markdown(body)
+                if sources:
+                    st.caption("Sources")
+                    st.markdown(sources)
 
         user_question = st.chat_input("Ask about the transcript, decisions, owners, or next steps")
         if user_question:
@@ -399,7 +438,11 @@ if result:
             answer = ask_question(result["rag_chain"], user_question)
             st.session_state.chat_history.append({"role": "assistant", "content": answer})
             with st.chat_message("assistant"):
-                st.markdown(answer)
+                body, sources = split_sources_block(answer)
+                st.markdown(body)
+                if sources:
+                    st.caption("Sources")
+                    st.markdown(sources)
 
         st.markdown("</div>", unsafe_allow_html=True)
 else:
