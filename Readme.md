@@ -2,6 +2,7 @@
 
 SmartMeeting AI is an AI-powered meeting intelligence platform that transforms meeting recordings into actionable insights. The system leverages Whisper for speech-to-text transcription, LangChain for orchestration, and ChromaDB for Retrieval-Augmented Generation (RAG) to enable semantic search and conversational querying over meeting recordings.
 
+
 ## Features
 
 ### Meeting Transcription
